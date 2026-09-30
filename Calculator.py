@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import messagebox
 import requests
@@ -19,37 +18,57 @@ def save_history(history):
 
 history = load_history()
 
-def convert_temperature(value, from_unit, to_unit):
-    if from_unit == "C" and to_unit == "F":
-        return (value * 9/5) + 32
-    elif from_unit == "F" and to_unit == "C":
-        return (value - 32) * 5/9
-    elif from_unit == "C" and to_unit == "K":
-        return value + 273.15
-    elif from_unit == "K" and to_unit == "C":
-        return value - 273.15
-    else:
-        return "Invalid conversion!"
-
-def convert_length(value, from_unit, to_unit):
-    if from_unit == "m" and to_unit == "ft":
+def convert_unit(value, from_unit, to_unit):
+    # Length
+    if from_unit == "km" and to_unit == "miles":
+        return value * 0.621371
+    elif from_unit == "miles" and to_unit == "km":
+        return value / 0.621371
+    elif from_unit == "m" and to_unit == "ft":
         return value * 3.28084
     elif from_unit == "ft" and to_unit == "m":
         return value / 3.28084
-    elif from_unit == "km" and to_unit == "mi":
-        return value * 0.621371
-    elif from_unit == "mi" and to_unit == "km":
-        return value / 0.621371
-    else:
-        return "Invalid conversion!"
+    elif from_unit == "cm" and to_unit == "inch":
+        return value * 0.393701
+    elif from_unit == "inch" and to_unit == "cm":
+        return value / 0.393701
+    elif from_unit == "mm" and to_unit == "cm":
+        return value / 10
+    elif from_unit == "cm" and to_unit == "mm":
+        return value * 10
 
-def convert_weight(value, from_unit, to_unit):
-    if from_unit == "kg" and to_unit == "lb":
+    # Weight
+    elif from_unit == "kg" and to_unit == "lbs":
         return value * 2.20462
-    elif from_unit == "lb" and to_unit == "kg":
+    elif from_unit == "lbs" and to_unit == "kg":
         return value / 2.20462
+    elif from_unit == "g" and to_unit == "oz":
+        return value * 0.035274
+    elif from_unit == "oz" and to_unit == "g":
+        return value / 0.035274
+    elif from_unit == "ton" and to_unit == "kg":
+        return value * 1000
+    elif from_unit == "kg" and to_unit == "ton":
+        return value / 1000
+
+    # Volume
+    elif from_unit == "l" and to_unit == "ml":
+        return value * 1000
+    elif from_unit == "ml" and to_unit == "l":
+        return value / 1000
+    elif from_unit == "l" and to_unit == "gallon":
+        return value * 0.264172
+    elif from_unit == "gallon" and to_unit == "l":
+        return value / 0.264172
+
+    # Temperature
+    elif from_unit == "c" and to_unit == "f":
+        return (value * 9/5) + 32
+    elif from_unit == "f" and to_unit == "c":
+        return (value - 32) * 5/9
+
     else:
-        return "Invalid conversion!"
+        return "Invalid conversion type!"
 
 def calculate():
     try:
@@ -64,24 +83,18 @@ def calculate():
             rate = data["rates"].get(second.upper())
             if rate:
                 result = rate
-                operator = f"{first.upper()} to {second.upper()}"
+                history_entry = f"{first.upper()} to {second.upper()} = {result}"
             else:
                 result = "Invalid currency code!"
+                history_entry = f"{first} {operator} {second} = {result}"
 
         elif operator == "convert":
-            conversion_type = first
-            from_unit = second
-            to_unit = entry_second.get()
-            value = float(entry_first.get())
-
-            if conversion_type == "temp":
-                result = convert_temperature(value, from_unit, to_unit)
-            elif conversion_type == "length":
-                result = convert_length(value, from_unit, to_unit)
-            elif conversion_type == "weight":
-                result = convert_weight(value, from_unit, to_unit)
-            else:
-                result = "Invalid conversion type!"
+            parts = first.split()
+            value = float(parts[0])
+            from_unit = parts[1].lower()
+            to_unit = second.lower()
+            result = convert_unit(value, from_unit, to_unit)
+            history_entry = f"{value} {from_unit} convert to {to_unit} = {result}"
 
         else:
             first_number = float(first)
@@ -102,57 +115,56 @@ def calculate():
             elif operator == "//":
                 result = first_number // second_number
             else:
-                result = "Invalid operator!"
+                result = "invalid operator!"
 
-        label_result.config(text=f"Result: {result}")
-        history.append(f"{first} {operator} {second} = {result}")
+            history_entry = f"{first} {operator} {second} = {result}"
+
+        label_result.config(text=f"Result: {result}", fg="#00ff00")
+        history.append(history_entry)
         save_history(history)
         show_history()
 
     except ValueError:
-        messagebox.showerror("Error", "Please enter valid numbers!")
+        messagebox.showerror("Error", "Invalid input! Please enter numbers only.")
     except ZeroDivisionError:
         messagebox.showerror("Error", "Cannot divide by zero!")
     except requests.exceptions.RequestException:
-        messagebox.showerror("Error", "Network error! Check your connection.")
+        messagebox.showerror("Error", "Network error! Please check your connection.")
     except KeyError:
         messagebox.showerror("Error", "Currency code not found. Use USD, EUR, CAD, etc.")
+    except IndexError:
+        messagebox.showerror("Error", "For unit conversion, enter like: 100 km")
 
 def show_history():
     history_text = "\n".join(history[-5:])
-    label_history.config(text=f"History:\n{history_text}")
+    label_history.config(text=f"History:\n{history_text}", fg="#00ff00")
 
 root = tk.Tk()
 root.title("Amirmahdi's Calculator")
-root.geometry("450x650")
+root.geometry("400x550")
 root.configure(bg="#1e1e1e")
 root.resizable(False, False)
 
-title_font = ("Arial", 18, "bold")
-label_font = ("Arial", 12)
-entry_font = ("Arial", 12)
-button_font = ("Arial", 12, "bold")
+tk.Label(root, text="Python Calculator", font=("Arial", 20, "bold"), fg="#00ff00", bg="#1e1e1e").pack(pady=10)
 
-tk.Label(root, text="Python Calculator", font=title_font, bg="#1e1e1e", fg="#00ff88").pack(pady=15)
-
-tk.Label(root, text="First Number / Currency / Conversion Type:", font=label_font, bg="#1e1e1e", fg="white").pack(pady=5)
-entry_first = tk.Entry(root, font=entry_font, width=30, bg="#2d2d2d", fg="white", insertbackground="white")
+tk.Label(root, text="First Number / Currency / Value + Unit:", fg="white", bg="#1e1e1e").pack(pady=5)
+entry_first = tk.Entry(root, bg="#2e2e2e", fg="white", insertbackground="white")
 entry_first.pack(pady=5)
 
-tk.Label(root, text="Operator (+ - * / ** % // currency convert):", font=label_font, bg="#1e1e1e", fg="white").pack(pady=5)
-entry_operator = tk.Entry(root, font=entry_font, width=30, bg="#2d2d2d", fg="white", insertbackground="white")
+tk.Label(root, text="Operator (+ - * / ** % // currency convert):", fg="white", bg="#1e1e1e").pack(pady=5)
+entry_operator = tk.Entry(root, bg="#2e2e2e", fg="white", insertbackground="white")
 entry_operator.pack(pady=5)
 
-tk.Label(root, text="Second Number / Currency / From Unit:", font=label_font, bg="#1e1e1e", fg="white").pack(pady=5)
-entry_second = tk.Entry(root, font=entry_font, width=30, bg="#2d2d2d", fg="white", insertbackground="white")
+tk.Label(root, text="Second Number / Currency / To Unit:", fg="white", bg="#1e1e1e").pack(pady=5)
+entry_second = tk.Entry(root, bg="#2e2e2e", fg="white", insertbackground="white")
 entry_second.pack(pady=5)
 
-tk.Button(root, text="Calculate", command=calculate, font=button_font, bg="#00ff88", fg="#1e1e1e", width=20).pack(pady=15)
+tk.Button(root, text="Calculate", command=calculate, bg="#00ff00", fg="black", font=("Arial", 12, "bold")).pack(pady=10)
 
-label_result = tk.Label(root, text="Result: ", font=("Arial", 14, "bold"), bg="#1e1e1e", fg="#00ff88")
+label_result = tk.Label(root, text="Result: ", font=("Arial", 14), fg="#00ff00", bg="#1e1e1e")
 label_result.pack(pady=10)
 
-label_history = tk.Label(root, text="History:\n", font=("Arial", 10), bg="#1e1e1e", fg="white", justify="left")
+label_history = tk.Label(root, text="History:\n", font=("Arial", 10), fg="#00ff00", bg="#1e1e1e", justify="left")
 label_history.pack(pady=10)
 
 show_history()
