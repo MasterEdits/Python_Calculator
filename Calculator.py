@@ -6,6 +6,7 @@ import math
 
 HISTORY_FILE = "calculator_history.txt"
 memory = 0
+is_dark_mode = True
 
 def load_history():
     if os.path.exists(HISTORY_FILE):
@@ -48,7 +49,7 @@ def button_click(char):
 def clear_display():
     entry_display.delete(0, tk.END)
 
-def calculate():
+def calculate(event=None):
     try:
         expression = entry_display.get()
         expression = expression.replace("sqrt", "math.sqrt")
@@ -86,10 +87,6 @@ def memory_subtract():
 def memory_recall():
     entry_display.delete(0, tk.END)
     entry_display.insert(0, str(memory))
-
-def memory_clear():
-    global memory
-    memory = 0
 
 def currency_convert():
     try:
@@ -133,11 +130,44 @@ def show_history():
     history_text = "\n".join(history[-5:])
     label_history.config(text=f"History:\n{history_text}")
 
+def toggle_theme():
+    global is_dark_mode
+    is_dark_mode = not is_dark_mode
+    if is_dark_mode:
+        bg_color = "#1e1e1e"
+        fg_color = "#00ff00"
+        btn_bg = "#2e2e2e"
+        btn_fg = "white"
+    else:
+        bg_color = "#f0f0f0"
+        fg_color = "#000000"
+        btn_bg = "#d0d0d0"
+        btn_fg = "black"
+
+    root.configure(bg=bg_color)
+    entry_display.configure(bg=btn_bg, fg=fg_color)
+    label_history.configure(bg=bg_color, fg=fg_color)
+    
+    for btn in all_buttons:
+        if btn.cget("text") == "=":
+            continue
+        elif btn.cget("text") == "C":
+            continue
+        elif btn.cget("text") in ["M+", "M-", "MR", "Theme"]:
+            continue
+        else:
+            btn.configure(bg=btn_bg, fg=btn_fg)
+
 root = tk.Tk()
 root.title("Amirmahdi's Calculator")
-root.geometry("450x700")
+root.geometry("450x750")
 root.configure(bg="#1e1e1e")
 root.resizable(False, False)
+
+# Keyboard bindings
+root.bind("<Return>", calculate)
+root.bind("<BackSpace>", lambda e: entry_display.delete(len(entry_display.get())-1, tk.END))
+root.bind("<Escape>", lambda e: clear_display())
 
 entry_display = tk.Entry(root, font=("Arial", 20), bg="#2e2e2e", fg="#00ff00", insertbackground="white", justify="right")
 entry_display.grid(row=0, column=0, columnspan=5, padx=10, pady=20, ipadx=8, ipady=10)
@@ -151,23 +181,32 @@ buttons = [
     ('tan', 6, 0), ('log', 6, 1), ('M+', 6, 2), ('M-', 6, 3), ('MR', 6, 4),
 ]
 
+all_buttons = []
 for (text, row, col) in buttons:
     if text == "=":
         btn = tk.Button(root, text=text, font=("Arial", 16, "bold"), bg="#00ff00", fg="black", command=calculate)
     elif text == "C":
         btn = tk.Button(root, text=text, font=("Arial", 16, "bold"), bg="#ff4444", fg="white", command=clear_display)
-    elif text == "M+":
-        btn = tk.Button(root, text=text, font=("Arial", 14), bg="#4444ff", fg="white", command=memory_add)
-    elif text == "M-":
-        btn = tk.Button(root, text=text, font=("Arial", 14), bg="#4444ff", fg="white", command=memory_subtract)
-    elif text == "MR":
-        btn = tk.Button(root, text=text, font=("Arial", 14), bg="#4444ff", fg="white", command=memory_recall)
+    elif text in ["M+", "M-", "MR"]:
+        command = memory_add if text == "M+" else memory_subtract if text == "M-" else memory_recall
+        btn = tk.Button(root, text=text, font=("Arial", 14), bg="#4444ff", fg="white", command=command)
     else:
         btn = tk.Button(root, text=text, font=("Arial", 14), bg="#2e2e2e", fg="white", command=lambda t=text: button_click(t))
     btn.grid(row=row, column=col, padx=3, pady=3, sticky="nsew", ipadx=5, ipady=8)
+    all_buttons.append(btn)
 
-tk.Button(root, text="Currency (USD EUR)", command=currency_convert, bg="#00ff00", fg="black").grid(row=7, column=0, columnspan=2, pady=5, sticky="nsew")
-tk.Button(root, text="Convert (100 km miles)", command=unit_convert, bg="#00ff00", fg="black").grid(row=7, column=2, columnspan=3, pady=5, sticky="nsew")
+# Extra buttons
+btn_theme = tk.Button(root, text="Theme", font=("Arial", 12), bg="#ffaa00", fg="black", command=toggle_theme)
+btn_theme.grid(row=7, column=0, columnspan=1, pady=5, sticky="nsew")
+all_buttons.append(btn_theme)
+
+btn_currency = tk.Button(root, text="Currency (USD EUR)", command=currency_convert, bg="#00ff00", fg="black")
+btn_currency.grid(row=7, column=1, columnspan=2, pady=5, sticky="nsew")
+all_buttons.append(btn_currency)
+
+btn_convert = tk.Button(root, text="Convert (100 km miles)", command=unit_convert, bg="#00ff00", fg="black")
+btn_convert.grid(row=7, column=3, columnspan=2, pady=5, sticky="nsew")
+all_buttons.append(btn_convert)
 
 label_history = tk.Label(root, text="History:\n", font=("Arial", 10), fg="#00ff00", bg="#1e1e1e", justify="left")
 label_history.grid(row=8, column=0, columnspan=5, pady=10)
